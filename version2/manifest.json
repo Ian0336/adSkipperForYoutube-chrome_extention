@@ -1,0 +1,19 @@
+{
+    "name": "adSkipperForYoutube",
+    "description": "to add a iframe youtube which contain the video you hover",
+    "version": "2.0",
+    "permissions": [
+      "activeTab"
+    ],
+    "content_scripts": [
+      {
+        
+        "matches": ["*://www.youtube.com/*"],
+        "css": ["content.css"],
+        "js" : ["content.js"]
+      }
+  
+    ], 
+    "manifest_version": 2
+  }
+  
