@@ -1,31 +1,35 @@
-var vedio = document.createElement("iframe");
-
-vedio.setAttribute("src", "https://www.youtube.com/embed/");
-vedio.setAttribute("id", "NoAddMyVedio");
-vedio.setAttribute("width", "560");
-vedio.setAttribute("height", "315");
-vedio.setAttribute("title", "YouTube video player");
-vedio.setAttribute("frameborder", "0");
-vedio.setAttribute(
+var video = document.createElement("iframe");
+var accelerator = 2;
+video.setAttribute("src", "https://www.youtube.com/embed/");
+video.setAttribute("id", "NoAddMyvideo");
+video.setAttribute("width", "560");
+video.setAttribute("height", "315");
+video.setAttribute("title", "YouTube video player");
+video.setAttribute("frameborder", "0");
+video.setAttribute(
   "style",
   " z-index : 5000; position: fixed; margin-top: 19%; "
 );
-vedio.setAttribute("alt", "Please drag the vedio");
+video.setAttribute("alt", "Please drag the video");
 
-vedio.setAttribute(
+video.setAttribute(
   "allow",
   "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
 );
-vedio.setAttribute("allowfullscreen", "");
-document.querySelector("body").appendChild(vedio);
+video.setAttribute("allowfullscreen", "");
+document.querySelector("body").appendChild(video);
 
 function change_url() {
   str = this.href.split("=");
-  newUrl = "https://www.youtube.com/embed/" + str[1];
-  vedio.setAttribute("src", newUrl);
+  newUrl = "https://www.youtube.com/embed/" + str[1] + "?autoplay=1";
+  video.setAttribute("src", newUrl);
 }
 function catch_a() {
-  console.log("f");
+  var a = document.querySelector('iframe[id="NoAddMyvideo"]');
+  var b = a.contentWindow.document;
+  b.querySelector('video[class="video-stream html5-main-video"]').playbackRate =
+    accelerator;
+
   lists = document.querySelectorAll("ytd-thumbnail");
   all_a = [];
   for (elt of lists) {
@@ -39,5 +43,13 @@ function catch_a() {
     elt.addEventListener("dragstart", change_url);
   }
 }
-
+const onMessage = (message) => {
+  accelerator = message.accelerator;
+  console.log(accelerator);
+  var a = document.querySelector('iframe[id="NoAddMyvideo"]');
+  var b = a.contentWindow.document;
+  b.querySelector('video[class="video-stream html5-main-video"]').playbackRate =
+    accelerator;
+};
 loop = setInterval(catch_a, 2000);
+chrome.runtime.onMessage.addListener(onMessage);
