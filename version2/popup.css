@@ -4,7 +4,7 @@ button:hover{
 .btn{
     color: rgb(239, 240, 240);
     font-size: 15px;
-    padding:10px 10px; background:rgb(80, 78, 78); border:0 none;
+    padding:10px 10px; background:rgb(80, 78, 78); border: 10px;;
     border-radius: 5px;
     
 }
