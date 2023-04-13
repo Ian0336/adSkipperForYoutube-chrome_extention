@@ -56,3 +56,21 @@ To further customize my viewing experience, I added a function to change the siz
 > > However, I encountered a minor issue where both the YouTube embed video and the actual YouTube video played simultaneously in some cases (such as in the video preview on the main page or when clicking on the video). To solve this issue, **_I removed the youtube video from the screen_**.
 
 > > ![](https://i.imgur.com/MlDFuxj.png)
+
+## Version3
+
+整體上和 version2 的概念是一樣的。
+但是因為常常開 popup 頁面很煩，所以我將調整大小，挑整位置，調整速度改到 iframe 上面，也就是主頁面上，如下圖。
+
+Overall, the concept remains the same as version 2. However, to avoid the inconvenience of opening a popup page, I have relocated the resizing, repositioning, and speed adjustment features to the top of the iframe on the main page. Please refer to the attached image for a visual representation of this.
+
+![](https://i.imgur.com/lIndWkG.png)
+
+按住按鈕並滑動就可以調整大小和位置。
+
+By pressing and sliding the button, you can adjust the size and position.
+
+而 popup 頁面就剩兩個功能就是 enable 和 reset。enable 按鈕按下去就會將 iframe 隱藏。reset 按鈕按下去則會將 iframe 設置回原本的大小及位置。
+
+The popup page has only two functions: enable and reset. Clicking on the enable button will hide the iframe. Clicking on the reset button will restore the iframe to its original size and position.
+![](https://i.imgur.com/x5GDg6Q.png)
