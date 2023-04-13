@@ -1,0 +1,15 @@
+button:hover{
+    background-color: rgb(120, 123, 123);
+}
+.btn{
+    color: rgb(239, 240, 240);
+    font-size: 15px;
+    padding:10px 10px; background:rgb(80, 78, 78); border: 10px;
+    border-radius: 10px;
+    transition: all  0.5s ease-out; /* vendorless fallback */
+  -o-transition: all  0.5s ease-out; /* opera */
+  -ms-transition: all  0.5s ease-out; /* IE 10 */
+  -moz-transition: all  0.5s ease-out; /* Firefox */
+  -webkit-transition: all  0.5s ease-out; /*safari and chrome */
+    
+}
