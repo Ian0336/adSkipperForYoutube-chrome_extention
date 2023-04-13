@@ -11,20 +11,20 @@ var display = true;
 
 function fit_settings() {
   resizeBtn.style["margin-top"] = `${
-    parseInt(video.style["margin-top"].slice(0, -2)) - 25
+    parseInt(video.style["margin-top"].slice(0, -2)) - 20
   }px`;
   resizeBtn.style["margin-left"] = `${
     parseInt(video.style["margin-left"].slice(0, -2)) + parseInt(video.width)
   }px`;
   posBtn.style["margin-top"] = `${
-    parseInt(video.style["margin-top"].slice(0, -2)) - 25
+    parseInt(video.style["margin-top"].slice(0, -2)) - 20
   }px`;
   posBtn.style["margin-left"] = `${
     parseInt(video.style["margin-left"].slice(0, -2)) +
     parseInt(video.width) / 2
   }px`;
   accInput.style["margin-top"] = `${
-    parseInt(video.style["margin-top"].slice(0, -2)) - 25
+    parseInt(video.style["margin-top"].slice(0, -2)) - 20
   }px`;
   accInput.style["margin-left"] = `${parseInt(
     video.style["margin-left"].slice(0, -2)
