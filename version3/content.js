@@ -81,7 +81,7 @@ function delete_other_player() {
 }
 function if_change_url_or_not() {
   var url = location.href;
-
+  if(url.includes("watch") == false) return;
   if (url != past_url) {
     var str = url.split("=");
     if (str.length > 1) {
@@ -122,7 +122,7 @@ function change_url(e) {
   var newUrl = "https://www.youtube.com/embed/" + str + "?autoplay=1";
   video.setAttribute("src", newUrl);
 }
-function catch_a() {
+function add_drag_listener() {
   var a = document.querySelector('iframe[id="NoAddMyvideo"]');
   var b = a.contentWindow.document;
   b.querySelector('video[class="video-stream html5-main-video"]').playbackRate =
@@ -243,8 +243,7 @@ function onMouseUp() {
   document.documentElement.removeEventListener("mouseup", onMouseUp);
 }
 
-function do_something() {
-  catch_a();
+function replace_video() {
   if (display) {
     delete_other_player();
     document
@@ -266,12 +265,28 @@ build_iframe();
 build_settings();
 window.addEventListener("load", (event) => {
   console.log("page is fully loaded");
-  do_something();
+  add_drag_listener();
+  replace_video();
 });
 addEventListener("wheel", (event) => {
-  do_something();
+  add_drag_listener();
 });
+window.navigation.addEventListener("navigate", (event) => { 
+  console.log('location changed!');
+  // await 1000ms to wait for the page to load
+  setTimeout(() => {
+    add_drag_listener();
+    replace_video();
+  }, 2000);
+});
+
+
+
+
 /* setInterval(do_something, 2000); */
+// listen if url is changed
+
+
 
 
 chrome.runtime.onMessage.addListener(onMessage);
