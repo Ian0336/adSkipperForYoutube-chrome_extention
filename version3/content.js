@@ -121,6 +121,11 @@ function change_url(e) {
   var str = this.href.split("=")[1].split("&")[0];
   var newUrl = "https://www.youtube.com/embed/" + str + "?autoplay=1";
   video.setAttribute("src", newUrl);
+  setTimeout(() => {
+    document.querySelector('iframe[id="NoAddMyvideo"]').contentWindow.document.querySelector(
+      'video[class="video-stream html5-main-video"]'
+    ).playbackRate = accelerator;
+  }, 1000);
 }
 function add_drag_listener() {
   var a = document.querySelector('iframe[id="NoAddMyvideo"]');
@@ -259,6 +264,11 @@ function replace_video() {
       ).playbackRate = 0;
   }
   if_change_url_or_not();
+  setTimeout(() => {
+    document.querySelector('iframe[id="NoAddMyvideo"]').contentWindow.document.querySelector(
+      'video[class="video-stream html5-main-video"]'
+    ).playbackRate = accelerator;
+  }, 1000);
 }
 
 build_iframe();
