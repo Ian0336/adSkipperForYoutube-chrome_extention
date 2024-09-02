@@ -264,6 +264,14 @@ function do_something() {
 
 build_iframe();
 build_settings();
-loop2 = setInterval(do_something, 2000);
+window.addEventListener("load", (event) => {
+  console.log("page is fully loaded");
+  do_something();
+});
+addEventListener("wheel", (event) => {
+  do_something();
+});
+/* setInterval(do_something, 2000); */
+
 
 chrome.runtime.onMessage.addListener(onMessage);
