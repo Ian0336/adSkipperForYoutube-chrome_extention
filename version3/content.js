@@ -9,6 +9,192 @@ var isMove = false;
 var pre_mouse = { x: 0, y: 0 };
 var display = true;
 
+// Load settings from localStorage
+function loadSettings() {
+  // Load playback speed
+  if (localStorage.getItem('adSkipper_accelerator')) {
+    accelerator = parseFloat(localStorage.getItem('adSkipper_accelerator'));
+    accInput.value = accelerator;
+  }
+  
+  // Load display state
+  if (localStorage.getItem('adSkipper_display') !== null) {
+    display = localStorage.getItem('adSkipper_display') === 'true';
+  }
+  
+  // Load iframe dimensions
+  if (localStorage.getItem('adSkipper_width')) {
+    video.width = parseInt(localStorage.getItem('adSkipper_width'));
+  }
+  
+  if (localStorage.getItem('adSkipper_height')) {
+    video.height = parseInt(localStorage.getItem('adSkipper_height'));
+  }
+  
+  // Load iframe position
+  if (localStorage.getItem('adSkipper_marginTop')) {
+    video.style["margin-top"] = localStorage.getItem('adSkipper_marginTop');
+  }
+  
+  if (localStorage.getItem('adSkipper_marginLeft')) {
+    video.style["margin-left"] = localStorage.getItem('adSkipper_marginLeft');
+  }
+  
+  // Apply display state
+  if (!display) {
+    removeElements();
+  }
+}
+
+// Function to remove all elements from the page
+function removeElements() {
+  if (document.querySelector('iframe[id="NoAddMyvideo"]')) {
+    document.querySelector('iframe[id="NoAddMyvideo"]').remove();
+  }
+  if (document.querySelector('img[alt="resize"]')) {
+    document.querySelector('img[alt="resize"]').remove();
+  }
+  if (document.querySelector('img[alt="move"]')) {
+    document.querySelector('img[alt="move"]').remove();
+  }
+  if (document.querySelector('input[alt="resize"]')) {
+    document.querySelector('input[alt="resize"]').remove();
+  }
+}
+
+function checkElements() {
+  if (!document.querySelector('iframe[id="NoAddMyvideo"]')) {
+    return false;
+  }
+  if (!document.querySelector('img[alt="resize"]')) {
+    return false;
+  }
+  if (!document.querySelector('img[alt="move"]')) {
+    return false;
+  }
+  if (!document.querySelector('input[alt="resize"]')) {
+    return false;
+  }
+  return true;
+
+}
+
+// Function to create and add all elements to the page
+function addElements() {
+  console.log("addElements");
+  video = document.createElement("iframe");
+  posBtn = document.createElement("img");
+  resizeBtn = document.createElement("img");
+  accInput = document.createElement("input");
+  
+  build_iframe();
+  build_settings();
+  
+  // Apply saved settings to the new elements
+  if (localStorage.getItem('adSkipper_accelerator')) {
+    accelerator = parseFloat(localStorage.getItem('adSkipper_accelerator'));
+    accInput.value = accelerator;
+  }
+  
+  if (localStorage.getItem('adSkipper_width')) {
+    video.width = parseInt(localStorage.getItem('adSkipper_width'));
+  }
+  
+  if (localStorage.getItem('adSkipper_height')) {
+    video.height = parseInt(localStorage.getItem('adSkipper_height'));
+  }
+  
+  if (localStorage.getItem('adSkipper_marginTop')) {
+    video.style["margin-top"] = localStorage.getItem('adSkipper_marginTop');
+  }
+  
+  if (localStorage.getItem('adSkipper_marginLeft')) {
+    video.style["margin-left"] = localStorage.getItem('adSkipper_marginLeft');
+  }
+  
+  fit_settings();
+  if_change_url_or_not();
+  
+  // Add event listeners to new elements
+  addEventListeners();
+  
+  setTimeout(() => {
+    add_drag_listener();
+  }, 1000);
+}
+
+// Function to add all event listeners to elements
+function addEventListeners() {
+  // Position button events
+  posBtn.addEventListener("mouseenter", () => {
+    posBtn.style["opacity"] = 1;
+  });
+  
+  posBtn.addEventListener("mouseleave", () => {
+    posBtn.style["opacity"] = 0.5;
+  });
+  
+  posBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    isMove = true;
+    pre_mouse.x = e.clientX;
+    pre_mouse.y = e.clientY;
+    document.documentElement.addEventListener("mousemove", onMouseMove);
+    document.documentElement.addEventListener("mouseup", onMouseUp);
+  });
+  
+  // Resize button events
+  resizeBtn.addEventListener("mouseenter", () => {
+    resizeBtn.style["opacity"] = 1;
+  });
+  
+  resizeBtn.addEventListener("mouseleave", () => {
+    resizeBtn.style["opacity"] = 0.5;
+  });
+  
+  resizeBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    isResize = true;
+    pre_mouse.x = e.clientX;
+    pre_mouse.y = e.clientY;
+    document.documentElement.addEventListener("mousemove", onMouseMove);
+    document.documentElement.addEventListener("mouseup", onMouseUp);
+  });
+  
+  // Input events
+  accInput.addEventListener("mouseenter", () => {
+    accInput.style["opacity"] = 1;
+  });
+  
+  accInput.addEventListener("mouseleave", () => {
+    accInput.style["opacity"] = 0.5;
+  });
+  
+  accInput.addEventListener("change", (e) => {
+    if (!checkElements()) return;
+    
+    let a = document.querySelector('iframe[id="NoAddMyvideo"]');
+    let b = a.contentWindow.document;
+  
+    accelerator = e.target.value;
+  
+    b.querySelector('video[class="video-stream html5-main-video"]').playbackRate =
+      accelerator;
+      
+    saveSettings();
+  });
+}
+
+// Save settings to localStorage
+function saveSettings() {
+  localStorage.setItem('adSkipper_accelerator', accelerator);
+  localStorage.setItem('adSkipper_display', display);
+  localStorage.setItem('adSkipper_width', video.width);
+  localStorage.setItem('adSkipper_height', video.height);
+  localStorage.setItem('adSkipper_marginTop', video.style["margin-top"]);
+  localStorage.setItem('adSkipper_marginLeft', video.style["margin-left"]);
+}
+
 function fit_settings() {
   resizeBtn.style["margin-top"] = `${
     parseInt(video.style["margin-top"].slice(0, -2)) - 20
@@ -60,7 +246,7 @@ function build_settings() {
   accInput.setAttribute("step", "0.25");
   accInput.setAttribute("min", "0");
   accInput.setAttribute("max", "10");
-  accInput.setAttribute("value", "2");
+  accInput.setAttribute("value", accelerator.toString());
   accInput.setAttribute(
     "style",
     "z-index : 5000; position: fixed; opacity:0.5"
@@ -128,6 +314,9 @@ function change_url(e) {
   }, 1000);
 }
 function add_drag_listener() {
+  if (!checkElements()) {
+    return;
+  }
   var a = document.querySelector('iframe[id="NoAddMyvideo"]');
   var b = a.contentWindow.document;
   b.querySelector('video[class="video-stream html5-main-video"]').playbackRate =
@@ -150,72 +339,33 @@ function add_drag_listener() {
 }
 const onMessage = (message) => {
   if (message.func == "disable") {
-    if (video.style["z-index"] == 5000) {
-      video.style["z-index"] = -5000;
-      accInput.style["z-index"] = -5000;
-      resizeBtn.style["z-index"] = -5000;
-      posBtn.style["z-index"] = -5000;
-
+    if (display) {
+      // Currently displayed, remove elements
+      removeElements();
       display = false;
     } else {
-      video.style["z-index"] = 5000;
-      accInput.style["z-index"] = 5000;
-      resizeBtn.style["z-index"] = 5000;
-      posBtn.style["z-index"] = 5000;
+      // Currently hidden, add elements back
+      addElements();
       display = true;
     }
+    saveSettings(); // Save display state when toggled
   } else if (message.func == "reset") {
+    // If elements are not displayed, add them first
+    if (!display) {
+      addElements();
+      display = true;
+    }
+    
+    // Then reset position and size
     video.width = 560;
     video.height = 315;
     video.style["margin-top"] = "200px";
     video.style["margin-left"] = "100px";
     fit_settings();
+    saveSettings(); // Save settings after reset
   }
 };
 
-posBtn.addEventListener("mouseenter", () => {
-  posBtn.style["opacity"] = 1;
-});
-posBtn.addEventListener("mouseleave", () => {
-  posBtn.style["opacity"] = 0.5;
-});
-posBtn.addEventListener("mousedown", (e) => {
-  e.preventDefault();
-  isMove = true;
-  pre_mouse.x = e.clientX;
-  pre_mouse.y = e.clientY;
-  document.documentElement.addEventListener("mousemove", onMouseMove);
-  document.documentElement.addEventListener("mouseup", onMouseUp);
-});
-resizeBtn.addEventListener("mouseenter", () => {
-  resizeBtn.style["opacity"] = 1;
-});
-resizeBtn.addEventListener("mouseleave", () => {
-  resizeBtn.style["opacity"] = 0.5;
-});
-resizeBtn.addEventListener("mousedown", (e) => {
-  e.preventDefault();
-  isResize = true;
-  pre_mouse.x = e.clientX;
-  pre_mouse.y = e.clientY;
-  document.documentElement.addEventListener("mousemove", onMouseMove);
-  document.documentElement.addEventListener("mouseup", onMouseUp);
-});
-accInput.addEventListener("mouseenter", () => {
-  accInput.style["opacity"] = 1;
-});
-accInput.addEventListener("mouseleave", () => {
-  accInput.style["opacity"] = 0.5;
-});
-accInput.addEventListener("change", (e) => {
-  let a = document.querySelector('iframe[id="NoAddMyvideo"]');
-  let b = a.contentWindow.document;
-
-  accelerator = e.target.value;
-
-  b.querySelector('video[class="video-stream html5-main-video"]').playbackRate =
-    accelerator;
-});
 function onMouseMove(e) {
   video.style.pointerEvents = "none";
   if (isResize) {
@@ -243,60 +393,68 @@ function onMouseUp() {
   video.style.pointerEvents = "auto";
   isResize = false;
   isMove = false;
-  console.log("up");
+  saveSettings(); // Save position and size after drag or resize
   document.documentElement.removeEventListener("mousemove", onMouseMove);
   document.documentElement.removeEventListener("mouseup", onMouseUp);
 }
 
 function replace_video() {
-  if (display) {
+  if (display && document.querySelector('iframe[id="NoAddMyvideo"]')) {
     delete_other_player();
-    document
-      .querySelector('iframe[id="NoAddMyvideo"]')
-      .contentWindow.document.querySelector(
-        'video[class="video-stream html5-main-video"]'
-      ).playbackRate = accelerator;
-  } else {
-    document
-      .querySelector('iframe[id="NoAddMyvideo"]')
-      .contentWindow.document.querySelector(
-        'video[class="video-stream html5-main-video"]'
-      ).playbackRate = 0;
+    try {
+      document
+        .querySelector('iframe[id="NoAddMyvideo"]')
+        .contentWindow.document.querySelector(
+          'video[class="video-stream html5-main-video"]'
+        ).playbackRate = accelerator;
+        
+      if_change_url_or_not();
+      setTimeout(() => {
+        document.querySelector('iframe[id="NoAddMyvideo"]').contentWindow.document.querySelector(
+          'video[class="video-stream html5-main-video"]'
+        ).playbackRate = accelerator;
+      }, 1000);
+    } catch (e) {
+      console.error("Error setting playback rate:", e);
+    }
   }
-  if_change_url_or_not();
-  setTimeout(() => {
-    document.querySelector('iframe[id="NoAddMyvideo"]').contentWindow.document.querySelector(
-      'video[class="video-stream html5-main-video"]'
-    ).playbackRate = accelerator;
-  }, 1000);
 }
 
-build_iframe();
-build_settings();
+// Initial setup
+// First load settings before creating any elements
+loadSettings(); // Load settings first to determine display state
+
+// Only create elements if display is true
+if (display) {
+  build_iframe();
+  build_settings();
+  fit_settings(); // Apply the loaded settings to the UI
+  addEventListeners(); // Add event listeners to the elements
+}
+
 window.addEventListener("load", (event) => {
   console.log("page is fully loaded");
-  add_drag_listener();
-  replace_video();
+  if (display) {
+    add_drag_listener();
+    replace_video();
+  }
 });
+
 addEventListener("wheel", (event) => {
-  add_drag_listener();
+  if (display) {
+    add_drag_listener();
+  }
 });
+
 window.navigation.addEventListener("navigate", (event) => { 
   console.log('location changed!');
   // await 1000ms to wait for the page to load
   setTimeout(() => {
-    add_drag_listener();
-    replace_video();
+    if (display) {
+      add_drag_listener();
+      replace_video();
+    }
   }, 2000);
 });
-
-
-
-
-/* setInterval(do_something, 2000); */
-// listen if url is changed
-
-
-
 
 chrome.runtime.onMessage.addListener(onMessage);
