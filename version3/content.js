@@ -1,3 +1,13 @@
+function sendPlaybackRateToProxy(rate) {
+  try {
+    var frame = document.querySelector('iframe[id="NoAddMyvideo"]');
+    if (!frame || !frame.contentWindow) return;
+    var payload = { type: "setPlaybackRate", value: Number(rate) };
+    frame.contentWindow.postMessage(payload, "*");
+  } catch (_) {
+    // no-op
+  }
+}
 var video = document.createElement("iframe");
 var posBtn = document.createElement("img");
 var resizeBtn = document.createElement("img");
@@ -173,13 +183,8 @@ function addEventListeners() {
   accInput.addEventListener("change", (e) => {
     if (!checkElements()) return;
     
-    let a = document.querySelector('iframe[id="NoAddMyvideo"]');
-    let b = a.contentWindow.document;
-  
     accelerator = e.target.value;
-  
-    b.querySelector('video[class="video-stream html5-main-video"]').playbackRate =
-      accelerator;
+    sendPlaybackRateToProxy(accelerator);
       
     saveSettings();
   });
@@ -273,14 +278,14 @@ function if_change_url_or_not() {
     if (str.length > 1) {
       str = str[1].split("&")[0];
 
-      var newUrl = "https://www.youtube.com/embed/" + str + "?autoplay=1";
+      var newUrl = "http://localhost:5500/proxy/index.html?v=" + str;
       video.setAttribute("src", newUrl);
     }
   }
   past_url = url;
 }
 function build_iframe() {
-  video.setAttribute("src", "https://www.youtube.com/embed/");
+  video.setAttribute("src", "http://localhost:5500/proxy/index.html");
   video.setAttribute("id", "NoAddMyvideo");
   video.setAttribute("width", "560");
   video.setAttribute("height", "315");
@@ -305,22 +310,17 @@ function change_url(e) {
   e.preventDefault();
 
   var str = this.href.split("=")[1].split("&")[0];
-  var newUrl = "https://www.youtube.com/embed/" + str + "?autoplay=1";
+  var newUrl = "http://localhost:5500/proxy/index.html?v=" + str;
   video.setAttribute("src", newUrl);
   setTimeout(() => {
-    document.querySelector('iframe[id="NoAddMyvideo"]').contentWindow.document.querySelector(
-      'video[class="video-stream html5-main-video"]'
-    ).playbackRate = accelerator;
-  }, 1000);
+    sendPlaybackRateToProxy(accelerator);
+  }, 1000); 
 }
 function add_drag_listener() {
   if (!checkElements()) {
     return;
   }
-  var a = document.querySelector('iframe[id="NoAddMyvideo"]');
-  var b = a.contentWindow.document;
-  b.querySelector('video[class="video-stream html5-main-video"]').playbackRate =
-    accelerator;
+  sendPlaybackRateToProxy(accelerator);
 
   var lists = document.querySelectorAll("ytd-thumbnail");
   var all_a = [];
@@ -402,18 +402,10 @@ function replace_video() {
   if (display && document.querySelector('iframe[id="NoAddMyvideo"]')) {
     delete_other_player();
     try {
-      document
-        .querySelector('iframe[id="NoAddMyvideo"]')
-        .contentWindow.document.querySelector(
-          'video[class="video-stream html5-main-video"]'
-        ).playbackRate = accelerator;
+      sendPlaybackRateToProxy(accelerator);
         
       if_change_url_or_not();
-      setTimeout(() => {
-        document.querySelector('iframe[id="NoAddMyvideo"]').contentWindow.document.querySelector(
-          'video[class="video-stream html5-main-video"]'
-        ).playbackRate = accelerator;
-      }, 1000);
+      setTimeout(() => { sendPlaybackRateToProxy(accelerator); }, 1000);
     } catch (e) {
       console.error("Error setting playback rate:", e);
     }
