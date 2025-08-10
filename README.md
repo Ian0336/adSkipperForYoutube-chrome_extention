@@ -74,3 +74,19 @@ By pressing and sliding the button, you can adjust the size and position.
 
 The popup page has only two functions: enable and reset. Clicking on the enable button will hide the iframe. Clicking on the reset button will restore the iframe to its original size and position.
 ![](https://i.imgur.com/x5GDg6Q.png)
+
+
+## 2025 更新：改用 Proxy 方式嵌入
+
+- 為什麼：在 `www.youtube.com` 直接嵌入 YouTube（`youtube.com/embed`）越來越容易被官方阻擋。為了避免被擋，現在改為透過「獨立來源」的 proxy 頁面載入，並用查詢參數傳遞影片 ID。
+- 變更內容：
+  - 不再導向 `https://www.youtube.com/embed/{videoId}`，而是導向 proxy，如：`https://your-host.tld/?v={videoId}`。
+  - proxy 頁面會在自己的網域中嵌入 YouTube no-cookie 播放器並播放該影片。
+- 目前部署：使用 GitHub Pages 提供 proxy 頁面：[GitHub Pages 部署](https://ian0336.github.io/adSkipperForYoutube-chrome_extention)。
+- 自行部署：可部署到任意靜態主機（GitHub Pages、Vercel、Netlify、Cloudflare Pages、自架伺服器）。需求如下：
+  - 在站點根路徑提供 `index.html`，支援 `?v={videoId}` 並在頁面內嵌入 YouTube 播放器。
+  - 可選參數：`start` 或 `t`（秒數）。
+  - 範例 URL：`https://your-domain.tld/?v=dQw4w9WgXcQ`。
+- 設定 base URL：
+  - 前往 `version3/content.js`，將目前使用的 proxy 網域（例如 `ian0336.github.io/adSkipperForYoutube-chrome_extention`）改成你自己的主機。
+  - 程式預期 proxy 在「站點根路徑」接受 `?v={videoId}`。

@@ -278,14 +278,14 @@ function if_change_url_or_not() {
     if (str.length > 1) {
       str = str[1].split("&")[0];
 
-      var newUrl = "http://localhost:5500/index.html?v=" + str;
+      var newUrl = "https://ian0336.github.io/adSkipperForYoutube-chrome_extention?v=" + str;
       video.setAttribute("src", newUrl);
     }
   }
   past_url = url;
 }
 function build_iframe() {
-  video.setAttribute("src", "http://localhost:5500/index.html");
+  video.setAttribute("src", "https://ian0336.github.io/adSkipperForYoutube-chrome_extention");
   video.setAttribute("id", "NoAddMyvideo");
   video.setAttribute("width", "560");
   video.setAttribute("height", "315");
@@ -310,7 +310,7 @@ function change_url(e) {
   e.preventDefault();
 
   var str = this.href.split("=")[1].split("&")[0];
-  var newUrl = "http://localhost:5500/index.html?v=" + str;
+  var newUrl = "https://ian0336.github.io/adSkipperForYoutube-chrome_extention?v=" + str;
   video.setAttribute("src", newUrl);
   setTimeout(() => {
     sendPlaybackRateToProxy(accelerator);
