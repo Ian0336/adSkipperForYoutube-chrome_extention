@@ -21,6 +21,8 @@ var isResize = false;
 var isMove = false;
 var pre_mouse = { x: 0, y: 0 };
 var display = true;
+var baseUrl = "https://ian0336.github.io/adSkipperForYoutube-chrome_extention";
+// var baseUrl = "http://localhost:5500";
 
 // Load settings from localStorage
 function loadSettings() {
@@ -322,14 +324,14 @@ function if_change_url_or_not() {
     if (str.length > 1) {
       str = str[1].split("&")[0];
 
-      var newUrl = "https://ian0336.github.io/adSkipperForYoutube-chrome_extention?v=" + str;
+      var newUrl = baseUrl + "?v=" + str;
       video.setAttribute("src", newUrl);
     }
   }
   past_url = url;
 }
 function build_iframe() {
-  video.setAttribute("src", "https://ian0336.github.io/adSkipperForYoutube-chrome_extention");
+  video.setAttribute("src", baseUrl);
   video.setAttribute("id", "NoAddMyvideo");
   video.setAttribute("width", "560");
   video.setAttribute("height", "315");
@@ -355,7 +357,7 @@ function change_url(e) {
 
   var str = this.href.split("=")[1].split("&")[0];
   console.log(str);
-  var newUrl = "https://ian0336.github.io/adSkipperForYoutube-chrome_extention?v=" + str;
+  var newUrl = baseUrl + "?v=" + str;
   video.setAttribute("src", newUrl);
   setTimeout(() => {
     sendPlaybackRateToProxy(accelerator);

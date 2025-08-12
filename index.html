@@ -24,14 +24,7 @@
   </head>
   <body>
     <div id="playerWrapper" style="display:none;">
-      <iframe
-        id="player"
-        title="YouTube video player"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowfullscreen
-        referrerpolicy="origin-when-cross-origin"
-        src=""
-      ></iframe>
+      <div id="player"></div>
     </div>
 
     <div id="message">
@@ -55,18 +48,14 @@
         }
 
         function looksLikeVideoId(str) {
-          // Basic heuristic for YouTube video IDs
           return /^[A-Za-z0-9_-]{6,}$/.test(str) && str.toLowerCase() !== "index.html";
         }
 
         function extractVideoId(loc) {
-          // Priority: query `v` -> query `videoId` -> last non-empty path segment
           var byV = getParam("v", loc.search);
           if (byV) return byV;
-
           var byVideoId = getParam("videoId", loc.search);
           if (byVideoId) return byVideoId;
-
           var segments = (loc.pathname || "").split("/").filter(Boolean);
           if (segments.length) {
             var candidate = segments[segments.length - 1];
@@ -81,28 +70,127 @@
           return;
         }
 
-        var base = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(videoId);
-        var params = [
-          "autoplay=1",
-          "playsinline=1",
-          "rel=0",
-          "modestbranding=1",
-          "enablejsapi=1",
-        ];
-
-        // Pass through optional start time if present (supports `start` or `t` in seconds)
-        var start = getParam("start", window.location.search) || getParam("t", window.location.search);
-        if (start && /^\d+$/.test(start)) params.push("start=" + start);
-
-        var src = base + "?" + params.join("&");
-        var iframe = document.getElementById("player");
-        iframe.src = src;
-
         document.title = "\u25B6 " + videoId + " - YouTube Embed";
         var messageEl = document.getElementById("message");
         var wrapperEl = document.getElementById("playerWrapper");
         if (messageEl) messageEl.style.display = "none";
         if (wrapperEl) wrapperEl.style.display = "block";
+
+        var start = getParam("start", window.location.search) || getParam("t", window.location.search);
+        var startSec = start && /^\d+$/.test(start) ? Number(start) : null;
+
+        var player = null;
+        var pendingRate = null;
+        var lastRequestedRate = null; // remember last rate to re-apply after reloads
+
+        // Progress tracking per videoId (in-memory only)
+        var progressByVideoId = Object.create(null);
+        var progressIntervalId = null;
+        var lastAdReloadAt = 0;
+        var adReloadCooldownMs = 5000; // avoid rapid reload loops
+
+        function resetProgressFor(id) {
+          progressByVideoId[id] = { currentTime: 0, updatedAt: Date.now() };
+        }
+
+        function saveProgress(id, seconds) {
+          var sec = Number(seconds);
+          if (!Number.isFinite(sec) || sec < 0) sec = 0;
+          progressByVideoId[id] = { currentTime: sec, updatedAt: Date.now() };
+        }
+
+        function readProgress(id) {
+          var obj = progressByVideoId[id];
+          var t = Number(obj && obj.currentTime);
+          return Number.isFinite(t) && t >= 0 ? t : 0;
+        }
+
+        function safeSetRate(rate) {
+          var r = Number(rate);
+          if (!Number.isFinite(r) || r <= 0) r = 1;
+          try {
+            if (player && typeof player.setPlaybackRate === "function") {
+              player.setPlaybackRate(r);
+            } else {
+              pendingRate = r;
+            }
+          } catch (_) {
+            pendingRate = r;
+          }
+        }
+
+        // Load YouTube Iframe API
+        // Reset progress when a new video id is loaded
+        resetProgressFor(videoId);
+
+        var tag = document.createElement("script");
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName("script")[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        window.onYouTubeIframeAPIReady = function () {
+          var playerVars = {
+            autoplay: 1,
+            playsinline: 1,
+            rel: 0,
+            modestbranding: 1
+          };
+          if (startSec != null) playerVars.start = startSec;
+
+          player = new YT.Player("player", {
+            host: "https://www.youtube-nocookie.com",
+            width: "100%",
+            height: "100%",
+            videoId: videoId,
+            playerVars: playerVars,
+            events: {
+              onReady: function () {
+                try { player.playVideo(); } catch (_) {}
+                if (pendingRate != null) {
+                  safeSetRate(pendingRate);
+                  pendingRate = null;
+                }
+
+                // Start 500ms interval to persist progress
+                try { if (progressIntervalId) clearInterval(progressIntervalId); } catch (_) {}
+                progressIntervalId = setInterval(function () {
+                  try {
+                    if (player && typeof player.getCurrentTime === "function") {
+                      var t = player.getCurrentTime();
+                      var d = typeof player.getDuration === "function" ? player.getDuration() : NaN;
+                      var state = typeof player.getPlayerState === "function" ? player.getPlayerState() : null; // 1 = playing
+                      // console.log("getCurrentTime", t);
+                      // console.log("getDuration", d);
+
+                      // Heuristic: if total duration is very short, likely an ad
+                      if (Number.isFinite(d) && d > 0 && d < 30 && state === 1) {
+                        console.log("Playing ad");
+                        var now = Date.now();
+                        if (now - lastAdReloadAt > adReloadCooldownMs) {
+                          lastAdReloadAt = now;
+                          // Reload the video to last saved progress
+                          var resumeAt = readProgress(videoId);
+                          try {
+                            player.loadVideoById({ videoId: videoId, startSeconds: resumeAt });
+                            // Re-apply last requested rate shortly after reload
+                            if (lastRequestedRate != null) {
+                              setTimeout(function () {
+                                try { player.setPlaybackRate(lastRequestedRate); } catch (_) {}
+                              }, 500);
+                            }
+                          } catch (_) { /* ignore */ }
+                        }
+                      }
+
+                      if (Number.isFinite(t)) saveProgress(videoId, t);
+                    }
+                  } catch (_) { /* ignore */ }
+                }, 500);
+
+              }
+            }
+          });
+        };
 
         // Listen for commands from parent (e.g., extension content script)
         window.addEventListener("message", function (event) {
@@ -110,20 +198,22 @@
           if (typeof data === "string") {
             try { data = JSON.parse(data); } catch (_) { /* ignore */ }
           }
-
           if (!data || typeof data !== "object") return;
-
-          if (data.type === "setPlaybackRate" && iframe && iframe.contentWindow) {
-            var rate = Number(data.value);
-            if (!Number.isFinite(rate) || rate <= 0) rate = 1;
-            // Forward to YouTube player via postMessage API
-            try {
-              iframe.contentWindow.postMessage(
-                JSON.stringify({ event: "command", func: "setPlaybackRate", args: [rate] }),
-                "*"
-              );
-            } catch (_) { /* ignore */ }
+          if (data.type === "setPlaybackRate") {
+            lastRequestedRate = Number(data.value);
+            safeSetRate(data.value);
           }
+        });
+
+        // Ensure we stop the interval and persist one last time on unload
+        window.addEventListener("beforeunload", function () {
+          try {
+            if (player && typeof player.getCurrentTime === "function") {
+              var t = player.getCurrentTime();
+              if (Number.isFinite(t)) saveProgress(videoId, t);
+            }
+          } catch (_) { /* ignore */ }
+          try { if (progressIntervalId) clearInterval(progressIntervalId); } catch (_) {}
         });
       })();
     </script>
