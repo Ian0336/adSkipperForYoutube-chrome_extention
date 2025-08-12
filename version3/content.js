@@ -1,5 +1,7 @@
-function sendPlaybackRateToProxy(rate) {
+async function sendPlaybackRateToProxy(rate) {
   try {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log("sendPlaybackRateToProxy");
     var frame = document.querySelector('iframe[id="NoAddMyvideo"]');
     if (!frame || !frame.contentWindow) return;
     var payload = { type: "setPlaybackRate", value: Number(rate) };
@@ -11,6 +13,7 @@ function sendPlaybackRateToProxy(rate) {
 var video = document.createElement("iframe");
 var posBtn = document.createElement("img");
 var resizeBtn = document.createElement("img");
+var reloadBtn = document.createElement("img");
 var accInput = document.createElement("input");
 var accelerator = 2;
 var past_url = "";
@@ -95,6 +98,7 @@ function addElements() {
   video = document.createElement("iframe");
   posBtn = document.createElement("img");
   resizeBtn = document.createElement("img");
+  reloadBtn = document.createElement("img");
   accInput = document.createElement("input");
   
   build_iframe();
@@ -171,6 +175,32 @@ function addEventListeners() {
     document.documentElement.addEventListener("mouseup", onMouseUp);
   });
   
+  // Reload button events
+  
+  reloadBtn.addEventListener("mouseenter", () => {
+    reloadBtn.style["opacity"] = 1;
+  });
+  
+  reloadBtn.addEventListener("mouseleave", () => {
+    reloadBtn.style["opacity"] = 0.5;
+  });
+
+  reloadBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    console.log("reload");
+    // Reload iframe without touching cross-origin window properties
+    var currentSrc = video.getAttribute("src") || "";
+    try {
+      var url = new URL(currentSrc, location.href);
+      url.searchParams.set("_reload", Date.now().toString());
+      video.setAttribute("src", url.toString());
+      sendPlaybackRateToProxy(accelerator);
+    } catch (_) {
+      // Fallback if URL parsing fails
+      video.setAttribute("src", currentSrc);
+    }
+  });
+  
   // Input events
   accInput.addEventListener("mouseenter", () => {
     accInput.style["opacity"] = 1;
@@ -206,6 +236,12 @@ function fit_settings() {
   }px`;
   resizeBtn.style["margin-left"] = `${
     parseInt(video.style["margin-left"].slice(0, -2)) + parseInt(video.width)
+  }px`;
+  reloadBtn.style["margin-top"] = `${
+    parseInt(video.style["margin-top"].slice(0, -2)) - 20
+  }px`;
+  reloadBtn.style["margin-left"] = `${
+    parseInt(video.style["margin-left"].slice(0, -2)) + parseInt(video.width)/4
   }px`;
   posBtn.style["margin-top"] = `${
     parseInt(video.style["margin-top"].slice(0, -2)) - 20
@@ -246,6 +282,14 @@ function build_settings() {
   posBtn.setAttribute("alt", "move");
 
   document.querySelector("body").appendChild(posBtn);
+
+  tmpSrc = chrome.runtime.getURL("reload.png");
+  reloadBtn.src = tmpSrc;
+  reloadBtn.setAttribute("width", "20");
+  reloadBtn.setAttribute("height", "20");
+  reloadBtn.setAttribute("style", "z-index : 5000; position: fixed; opacity:0.5");
+  reloadBtn.setAttribute("alt", "reload");
+  document.querySelector("body").appendChild(reloadBtn);
 
   accInput.setAttribute("type", "number");
   accInput.setAttribute("step", "0.25");
@@ -307,9 +351,10 @@ function build_iframe() {
   document.querySelector("body").appendChild(video);
 }
 function change_url(e) {
-  e.preventDefault();
+  e.preventDefault(); 
 
   var str = this.href.split("=")[1].split("&")[0];
+  console.log(str);
   var newUrl = "https://ian0336.github.io/adSkipperForYoutube-chrome_extention?v=" + str;
   video.setAttribute("src", newUrl);
   setTimeout(() => {
@@ -321,15 +366,24 @@ function add_drag_listener() {
     return;
   }
   sendPlaybackRateToProxy(accelerator);
+  targetTags = ["ytd-video-renderer", "yt-lockup-view-model", "ytd-rich-item-renderer"]
 
-  var lists = document.querySelectorAll("ytd-thumbnail");
+  let listsSet = new Set();
+  for (elt of targetTags) {
+    for (elt2 of document.querySelectorAll(elt)) {
+      listsSet.add(elt2);
+    }
+  }
+  lists = Array.from(listsSet);
+
   var all_a = [];
   for (elt of lists) {
-    var aa = elt.querySelectorAll("a[tabindex][rel]");
+    var aa = elt.querySelectorAll("a");
     for (s of aa) {
       all_a.push(s);
     }
   }
+
 
   for (elt of all_a) {
     elt.style["z-index"] = 4999;

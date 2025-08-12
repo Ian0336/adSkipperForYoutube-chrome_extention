@@ -17,7 +17,7 @@
     ], 
     "manifest_version": 3,
     "web_accessible_resources": [{
-      "resources": ["resize.png", "move.png"],
+      "resources": ["resize.png", "move.png", "reload.png"],
       "matches": ["*://www.youtube.com/*"]
     }]
   }
