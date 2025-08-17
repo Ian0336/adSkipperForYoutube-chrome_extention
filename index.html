@@ -89,6 +89,10 @@
         var lastAdReloadAt = 0;
         var adReloadCooldownMs = 5000; // avoid rapid reload loops
 
+        var lastCurrentTime = 0;
+        var lastPlayerState = 0;
+        var detectionTimeInterval = 500;
+
         function resetProgressFor(id) {
           progressByVideoId[id] = { currentTime: 0, updatedAt: Date.now() };
         }
@@ -157,13 +161,14 @@
                   try {
                     if (player && typeof player.getCurrentTime === "function") {
                       var t = player.getCurrentTime();
-                      var d = typeof player.getDuration === "function" ? player.getDuration() : NaN;
+                      var s = player.getPlayerState();
+                      console.log("getPlayerState", s, t);
                       var state = typeof player.getPlayerState === "function" ? player.getPlayerState() : null; // 1 = playing
                       // console.log("getCurrentTime", t);
                       // console.log("getDuration", d);
 
                       // Heuristic: if total duration is very short, likely an ad
-                      if (Number.isFinite(d) && d > 0 && d < 30 && state === 1) {
+                      if (lastPlayerState === 1 && s === 1 && (t - lastCurrentTime) < detectionTimeInterval*0.8*0.001) {
                         console.log("Playing ad");
                         var now = Date.now();
                         if (now - lastAdReloadAt > adReloadCooldownMs) {
@@ -182,10 +187,13 @@
                         }
                       }
 
+                      lastCurrentTime = t;
+                      lastPlayerState = s;
+
                       if (Number.isFinite(t)) saveProgress(videoId, t);
                     }
                   } catch (_) { /* ignore */ }
-                }, 500);
+                }, detectionTimeInterval);
 
               }
             }
