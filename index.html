@@ -168,7 +168,7 @@
                       // console.log("getDuration", d);
 
                       // Heuristic: if total duration is very short, likely an ad
-                      if (lastPlayerState === 1 && s === 1 && (t - lastCurrentTime) < detectionTimeInterval*0.8*0.001) {
+                      if ((lastPlayerState === 1 && s === 1 && (t - lastCurrentTime) < detectionTimeInterval*0.8*0.001) || s === -1) {
                         console.log("Playing ad");
                         var now = Date.now();
                         if (now - lastAdReloadAt > adReloadCooldownMs) {
