@@ -63,8 +63,15 @@
           }
           return null;
         }
+        function extractListId(loc) {
+          var byList = getParam("list", loc.search);
+          if (byList) return byList;
+          return null;
+        }
 
         var videoId = extractVideoId(window.location);
+        var listId = extractListId(window.location);
+        console.log(window.location);
         if (!videoId) {
           document.title = "YouTube Embed Proxy";
           return;
@@ -87,10 +94,11 @@
         var progressByVideoId = Object.create(null);
         var progressIntervalId = null;
         var lastAdReloadAt = 0;
-        var adReloadCooldownMs = 5000; // avoid rapid reload loops
+        var adReloadCooldownMs = 1000; // avoid rapid reload loops
 
-        var lastCurrentTime = 0;
-        var lastPlayerState = 0;
+        var lastTime = 0;
+
+
         var detectionTimeInterval = 500;
 
         function resetProgressFor(id) {
@@ -137,10 +145,13 @@
             autoplay: 1,
             playsinline: 1,
             rel: 0,
-            modestbranding: 1
           };
+          if (listId) {
+            playerVars.listType = "playlist";
+            playerVars.list = listId;
+          }
           if (startSec != null) playerVars.start = startSec;
-
+          console.log(playerVars);
           player = new YT.Player("player", {
             host: "https://www.youtube-nocookie.com",
             width: "100%",
@@ -168,15 +179,19 @@
                       // console.log("getDuration", d);
 
                       // Heuristic: if total duration is very short, likely an ad
-                      if ((lastPlayerState === 1 && s === 1 && (t - lastCurrentTime) < detectionTimeInterval*0.8*0.001) || s === -1) {
-                        console.log("Playing ad");
+                      if (s === -1 && t - lastTime > reloadThresholdMs * 0.001 * 0.1) {
                         var now = Date.now();
                         if (now - lastAdReloadAt > adReloadCooldownMs) {
                           lastAdReloadAt = now;
                           // Reload the video to last saved progress
                           var resumeAt = readProgress(videoId);
+                          console.log("Playing ad", videoId, resumeAt);
                           try {
-                            player.loadVideoById({ videoId: videoId, startSeconds: resumeAt });
+                            if (listId) {
+                              player.loadPlaylist({ playlistId: listId, startIndex: resumeAt });
+                            } else {
+                              player.loadVideoById({ videoId: videoId, startSeconds: resumeAt });
+                            }
                             // Re-apply last requested rate shortly after reload
                             if (lastRequestedRate != null) {
                               setTimeout(function () {
@@ -185,12 +200,10 @@
                             }
                           } catch (_) { /* ignore */ }
                         }
+                      } else {
+                        if (Number.isFinite(t)) saveProgress(videoId, t);
                       }
-
-                      lastCurrentTime = t;
-                      lastPlayerState = s;
-
-                      if (Number.isFinite(t)) saveProgress(videoId, t);
+                      lastTime = t;
                     }
                   } catch (_) { /* ignore */ }
                 }, detectionTimeInterval);

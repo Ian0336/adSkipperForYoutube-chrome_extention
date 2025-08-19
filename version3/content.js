@@ -320,11 +320,9 @@ function if_change_url_or_not() {
   var url = location.href;
   if(url.includes("watch") == false) return;
   if (url != past_url) {
-    var str = url.split("=");
+    var str = url.split("?");
     if (str.length > 1) {
-      str = str[1].split("&")[0];
-
-      var newUrl = baseUrl + "?v=" + str;
+      var newUrl = baseUrl + "?" + str[1]
       video.setAttribute("src", newUrl);
     }
   }
@@ -355,9 +353,10 @@ function build_iframe() {
 function change_url(e) {
   e.preventDefault(); 
 
-  var str = this.href.split("=")[1].split("&")[0];
-  console.log(str);
-  var newUrl = baseUrl + "?v=" + str;
+  var str = this.href.split("?");
+  if (str.length > 1) {
+    var newUrl = baseUrl + "?" + str[1]
+  }
   video.setAttribute("src", newUrl);
   setTimeout(() => {
     sendPlaybackRateToProxy(accelerator);
@@ -368,7 +367,7 @@ function add_drag_listener() {
     return;
   }
   sendPlaybackRateToProxy(accelerator);
-  targetTags = ["ytd-video-renderer", "yt-lockup-view-model", "ytd-rich-item-renderer"]
+  targetTags = ["ytd-video-renderer", "yt-lockup-view-model", "ytd-rich-item-renderer", "ytd-thumbnail"]
 
   let listsSet = new Set();
   for (elt of targetTags) {
