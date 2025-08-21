@@ -179,7 +179,7 @@
                       // console.log("getDuration", d);
 
                       // Heuristic: if total duration is very short, likely an ad
-                      if (s === -1 && t - lastTime > reloadThresholdMs * 0.001 * 0.1) {
+                      if (s === -1 && t - lastTime > detectionTimeInterval * 0.001 * 0.1) {
                         var now = Date.now();
                         if (now - lastAdReloadAt > adReloadCooldownMs) {
                           lastAdReloadAt = now;
