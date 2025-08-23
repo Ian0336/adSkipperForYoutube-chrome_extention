@@ -317,12 +317,20 @@ function delete_other_player() {
   }
 }
 function if_change_url_or_not() {
+  console.log("if_change_url_or_not", location.href);
   var url = location.href;
-  if(url.includes("watch") == false) return;
+  if(url.includes("watch") == false && url.includes("shorts") == false) return;
   if (url != past_url) {
     var str = url.split("?");
+    console.log(str);
     if (str.length > 1) {
       var newUrl = baseUrl + "?" + str[1]
+      video.setAttribute("src", newUrl);
+    }
+    else if(url.includes("shorts")) {
+      var str = url.split("shorts/");
+      var newUrl = baseUrl + "?v=" + str[1];
+      console.log(newUrl);
       video.setAttribute("src", newUrl);
     }
   }
@@ -357,6 +365,14 @@ function change_url(e) {
   if (str.length > 1) {
     var newUrl = baseUrl + "?" + str[1]
   }
+  else if(url.includes("shorts")) {
+    var str = url.split("shorts/");
+    var newUrl = baseUrl + "?v=" + str[1];
+  }
+  else {
+    var newUrl = baseUrl;
+  }
+  console.log(newUrl);
   video.setAttribute("src", newUrl);
   setTimeout(() => {
     sendPlaybackRateToProxy(accelerator);
@@ -493,7 +509,7 @@ addEventListener("wheel", (event) => {
   }
 });
 
-window.navigation.addEventListener("navigate", (event) => { 
+window.navigation.addEventListener("navigatesuccess", (event) => { 
   console.log('location changed!');
   // await 1000ms to wait for the page to load
   setTimeout(() => {
@@ -501,7 +517,7 @@ window.navigation.addEventListener("navigate", (event) => {
       add_drag_listener();
       replace_video();
     }
-  }, 2000);
+  }, 500);
 });
 
 chrome.runtime.onMessage.addListener(onMessage);
