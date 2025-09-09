@@ -95,6 +95,7 @@
         var progressIntervalId = null;
         var lastAdReloadAt = 0;
         var adReloadCooldownMs = 1000; // avoid rapid reload loops
+        var videoDuration = 0;
 
         var lastTime = 0;
 
@@ -165,6 +166,8 @@
                   safeSetRate(pendingRate);
                   pendingRate = null;
                 }
+                videoDuration = player.getDuration();
+                console.log("videoDuration", videoDuration);
 
                 // Start 500ms interval to persist progress
                 try { if (progressIntervalId) clearInterval(progressIntervalId); } catch (_) {}
@@ -173,13 +176,12 @@
                     if (player && typeof player.getCurrentTime === "function") {
                       var t = player.getCurrentTime();
                       var s = player.getPlayerState();
-                      console.log("getPlayerState", s, t);
+                      var d = player.getDuration();
                       var state = typeof player.getPlayerState === "function" ? player.getPlayerState() : null; // 1 = playing
                       // console.log("getCurrentTime", t);
                       // console.log("getDuration", d);
-
                       // Heuristic: if total duration is very short, likely an ad
-                      if (s === -1 && !(t == lastTime)) {
+                      if ((s === -1 && !(t == lastTime)) || Math.abs(d - videoDuration) > 1) {
                         var now = Date.now();
                         if (now - lastAdReloadAt > adReloadCooldownMs) {
                           lastAdReloadAt = now;
