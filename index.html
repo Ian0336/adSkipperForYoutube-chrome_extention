@@ -98,7 +98,11 @@
         var videoDuration = 0;
 
         var lastTime = 0;
-
+        
+        // Background video player for ads
+        var backgroundPlayer = null;
+        var backgroundPlayerReady = false;
+        var isPlayingAdInBackground = false;
 
         var detectionTimeInterval = 500;
 
@@ -132,6 +136,86 @@
           }
         }
 
+        function createBackgroundPlayer() {
+          // Create hidden container for background player
+          var bgContainer = document.createElement("div");
+          bgContainer.id = "backgroundPlayer";
+          bgContainer.style.cssText = "position: absolute; top: -1000px; left: -1000px; width: 1px; height: 1px; opacity: 0; pointer-events: none;";
+          document.body.appendChild(bgContainer);
+
+          // Initialize background player with YouTube API
+          backgroundPlayer = new YT.Player("backgroundPlayer", {
+            width: "1",
+            height: "1",
+            videoId: "dQw4w9WgXcQ", // Default video (Rick Roll as placeholder)
+            playerVars: {
+              autoplay: 0,
+              controls: 0,
+              disablekb: 1,
+              fs: 0,
+              modestbranding: 1,
+              rel: 0,
+              showinfo: 0,
+              mute: 1, // Mute the background player
+              playsinline: 1
+            },
+            events: {
+              onReady: function() {
+                backgroundPlayerReady = true;
+                console.log("Background player ready");
+              },
+              onStateChange: function(event) {
+                // Monitor background player state
+                if (event.data === YT.PlayerState.ENDED && isPlayingAdInBackground) {
+                  console.log("Background ad finished playing");
+                  isPlayingAdInBackground = false;
+                }
+              }
+            }
+          });
+        }
+
+        function playAdInBackground(adVideoId) {
+          if (!backgroundPlayerReady || isPlayingAdInBackground) return;
+          
+          try {
+            console.log("Playing ad in background for 10 seconds:", adVideoId);
+            isPlayingAdInBackground = true;
+            
+            // Load and play the ad video in background
+            backgroundPlayer.loadVideoById({
+              videoId: adVideoId || "dQw4w9WgXcQ", // Fallback video
+              startSeconds: 0
+            });
+            
+            // Ensure it's muted and hidden
+            setTimeout(function() {
+              try {
+                backgroundPlayer.mute();
+                backgroundPlayer.playVideo();
+              } catch(e) {
+                console.log("Error controlling background player:", e);
+              }
+            }, 500);
+            
+            // Stop background ad after 10 seconds
+            setTimeout(function() {
+              try {
+                console.log("Stopping background ad after 10 seconds");
+                backgroundPlayer.pauseVideo();
+                backgroundPlayer.stopVideo();
+                isPlayingAdInBackground = false;
+              } catch(e) {
+                console.log("Error stopping background player:", e);
+                isPlayingAdInBackground = false;
+              }
+            }, 10000); // 10 seconds = 10000 milliseconds
+            
+          } catch(e) {
+            console.log("Error playing ad in background:", e);
+            isPlayingAdInBackground = false;
+          }
+        }
         // Load YouTube Iframe API
         // Reset progress when a new video id is loaded
         resetProgressFor(videoId);
@@ -166,8 +250,8 @@
                   safeSetRate(pendingRate);
                   pendingRate = null;
                 }
-                videoDuration = player.getDuration();
-                console.log("videoDuration", videoDuration);
+
+                createBackgroundPlayer();
 
                 // Start 500ms interval to persist progress
                 try { if (progressIntervalId) clearInterval(progressIntervalId); } catch (_) {}
@@ -178,16 +262,20 @@
                       var s = player.getPlayerState();
                       var d = player.getDuration();
                       var state = typeof player.getPlayerState === "function" ? player.getPlayerState() : null; // 1 = playing
-                      // console.log("getCurrentTime", t);
+                      console.log("getVideoData", player.getVideoData());
                       // console.log("getDuration", d);
                       // Heuristic: if total duration is very short, likely an ad
-                      if ((s === -1 && !(t == lastTime)) || Math.abs(d - videoDuration) > 1) {
+                      if ((s === -1 && !(t == lastTime)) || (videoDuration > 0 && Math.abs(d - videoDuration) > 1)) {
                         var now = Date.now();
                         if (now - lastAdReloadAt > adReloadCooldownMs) {
                           lastAdReloadAt = now;
+                          
+                          // Start playing an ad in background to simulate ad viewing
+                          playAdInBackground(videoId);
+                          
                           // Reload the video to last saved progress
                           var resumeAt = readProgress(videoId);
-                          console.log("Playing ad", videoId, resumeAt);
+                          console.log("Ad detected - playing ad in background and reloading main video", videoId, resumeAt);
                           try {
                             if (listId) {
                               player.loadPlaylist({ playlistId: listId, startIndex: resumeAt });
@@ -203,6 +291,9 @@
                           } catch (_) { /* ignore */ }
                         }
                       } else {
+                        if(videoDuration == 0) {
+                          videoDuration = d;
+                        }
                         if (Number.isFinite(t)) saveProgress(videoId, t);
                       }
                       lastTime = t;
