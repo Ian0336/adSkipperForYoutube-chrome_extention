@@ -95,7 +95,6 @@
         var progressIntervalId = null;
         var lastAdReloadAt = 0;
         var adReloadCooldownMs = 1000; // avoid rapid reload loops
-        var videoDuration = 0;
 
         var lastTime = 0;
         
@@ -140,7 +139,7 @@
           // Create hidden container for background player
           var bgContainer = document.createElement("div");
           bgContainer.id = "backgroundPlayer";
-          bgContainer.style.cssText = "position: absolute; top: -1000px; left: -1000px; width: 1px; height: 1px; opacity: 0; pointer-events: none;";
+          bgContainer.style.cssText = "position: absolute; top: 0px; left: 0px; width: 100px; height: 100px; opacity: 0.5; pointer-events: none;";
           document.body.appendChild(bgContainer);
 
           // Initialize background player with YouTube API
@@ -261,11 +260,13 @@
                       var t = player.getCurrentTime();
                       var s = player.getPlayerState();
                       var d = player.getDuration();
+                      var data = player.getVideoData();
                       var state = typeof player.getPlayerState === "function" ? player.getPlayerState() : null; // 1 = playing
-                      console.log("getVideoData", player.getVideoData());
+                      // console.log("getVideoData", player.getVideoData());
                       // console.log("getDuration", d);
                       // Heuristic: if total duration is very short, likely an ad
-                      if ((s === -1 && !(t == lastTime)) || (videoDuration > 0 && Math.abs(d - videoDuration) > 1)) {
+                      if ((s === -1 && !(t == lastTime)  || data?.author == "")) {
+                        console.log("Ad detected", data);
                         var now = Date.now();
                         if (now - lastAdReloadAt > adReloadCooldownMs) {
                           lastAdReloadAt = now;
@@ -291,9 +292,7 @@
                           } catch (_) { /* ignore */ }
                         }
                       } else {
-                        if(videoDuration == 0) {
-                          videoDuration = d;
-                        }
+
                         if (Number.isFinite(t)) saveProgress(videoId, t);
                       }
                       lastTime = t;
